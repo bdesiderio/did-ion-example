@@ -1,0 +1,35 @@
+{
+  "name": "ion-did-poc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node --files src/ion-example.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^17.0.2",
+    "tslint": "^5.12.1",
+    "typescript": "^3.3.3"
+  },
+  "dependencies": {
+    "@decentralized-identity/did-auth-jose": "^0.1.14",
+    "@decentralized-identity/ion-sdk": "^0.5.0",
+    "@types/bs58": "^4.0.1",
+    "@types/elliptic": "^6.4.14",
+    "@types/node-jose": "^1.1.8",
+    "bs58": "^4.0.1",
+    "elliptic": "^6.5.4",
+    "ethereumjs-wallet": "^1.0.2",
+    "ethers": "^5.5.2",
+    "jose": "^3.5.1-experimental",
+    "js-sha3": "^0.8.0",
+    "multibase": "^4.0.6",
+    "node-jose": "^2.0.0",
+    "node-sass": "^7.0.0",
+    "ts-node": "^10.4.0"
+  }
+}
