@@ -114,8 +114,8 @@ const createKey = async () => {
     const updateKey = require('./keys/jwkEs256k2Public.json');
     const publicKey = require('./keys/publicKeyModel1.json');
 
-    const pk = BaseConverter.convert(updateKey, Base.JWK, Base.Hex);
-    var jwk = BaseConverter.convert("0xc1fc10089dce46a55d9c75e44fc3fe2e0fc6b71044857dedcbd3549f09c7ae6cba27bca8bfd5b809d10ddba9859bb12ceeaa4fd90fa77291184211953a56adf5", Base.Hex, Base.JWK);
+    // const pk = BaseConverter.convert(updateKey, Base.JWK, Base.Hex);
+    // var jwk = BaseConverter.convert("0xc1fc10089dce46a55d9c75e44fc3fe2e0fc6b71044857dedcbd3549f09c7ae6cba27bca8bfd5b809d10ddba9859bb12ceeaa4fd90fa77291184211953a56adf5", Base.Hex, Base.JWK);
 
     const publicKeys = [publicKey];
 
@@ -128,6 +128,12 @@ const createKey = async () => {
     };
     const input = { recoveryKey, updateKey, document };
     const result = IonRequest.createCreateRequest(input);
+
+    const didDoc = IonDid.createLongFormDid({
+        document: document,
+        recoveryKey: recoveryKey,
+        updateKey: updateKey,
+    });
 
     const options = {
         method: 'POST',
