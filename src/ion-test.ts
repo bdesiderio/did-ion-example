@@ -116,7 +116,7 @@ const createKey = async () => {
 
     const publicKeyDidComm = {
         id: "did-comm",
-        type: "EcdsaSecp256k1VerificationKey2019",
+        type: "X25519KeyAgreementKey2019",
         publicKeyJwk: {
             kty: "EC",
             crv: "secp256k1",
@@ -131,7 +131,7 @@ const createKey = async () => {
 
     const publicKeyBbs: IonPublicKeyModel = {
         id: "vc-bbs",
-        type: "EcdsaSecp256k1VerificationKey2019",
+        type: "Bls12381G1Key2020",
         publicKeyJwk: {
             kty: "EC",
             crv: "secp256k1",
@@ -161,7 +161,7 @@ const createKey = async () => {
         services,
         // controller: "did:modena:ganache:EiAQl7gSqCJX50JZ4UjsnDnmTRxr0sWDxDjNxZTotvAfDA"
     };
-    
+
 
     //LONG DID
     const longDid = IonDid.createLongFormDid({
