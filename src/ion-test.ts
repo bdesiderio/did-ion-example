@@ -110,30 +110,69 @@ var testDID = async () => {
 }
 
 const createKey = async () => {
+    //KMS
     const recoveryKey = require('./keys/jwkEs256k1Public.json');
     const updateKey = require('./keys/jwkEs256k2Public.json');
-    const publicKey = require('./keys/publicKeyModel1.json');
+
+    const publicKeyDidComm = {
+        id: "did-comm",
+        type: "EcdsaSecp256k1VerificationKey2019",
+        publicKeyJwk: {
+            kty: "EC",
+            crv: "secp256k1",
+            x: "tXSKB_rubXS7sCjXqupVJEzTcW3MsjmEvq1YpXn96Zg",
+            y: "dOicXqbjFxoGJ-K0-GJ1kHYJqic_D_OMuUwkQ7Ol6nk"
+        },
+        purposes: [
+            IonPublicKeyPurpose.KeyAgreement
+        ]
+    };
+
+
+    const publicKeyBbs: IonPublicKeyModel = {
+        id: "vc-bbs",
+        type: "EcdsaSecp256k1VerificationKey2019",
+        publicKeyJwk: {
+            kty: "EC",
+            crv: "secp256k1",
+            x: "tXSKB_rubXS7sCjXqupVJEzTcW3MsjmEvq1YpXn96Zg",
+            y: "dOicXqbjFxoGJ-K0-GJ1kHYJqic_D_OMuUwkQ7Ol6nk"
+        },
+        purposes: [
+            IonPublicKeyPurpose.AssertionMethod
+        ]
+    };
+
+    // require('./keys/publicKeyModel1.json');
+
+
+    //DID Registry
 
     // const pk = BaseConverter.convert(updateKey, Base.JWK, Base.Hex);
     // var jwk = BaseConverter.convert("0xc1fc10089dce46a55d9c75e44fc3fe2e0fc6b71044857dedcbd3549f09c7ae6cba27bca8bfd5b809d10ddba9859bb12ceeaa4fd90fa77291184211953a56adf5", Base.Hex, Base.JWK);
 
-    const publicKeys = [publicKey];
+    const publicKeys: IonPublicKeyModel[] = [publicKeyDidComm, publicKeyBbs];
 
     const services = require('./keys/service1.json');
     // const services = [service];
 
     const document: IonDocumentModel = {
-        publicKeys,
-        services
+        publicKeys: publicKeys,
+        services,
+        // controller: "did:modena:ganache:EiAQl7gSqCJX50JZ4UjsnDnmTRxr0sWDxDjNxZTotvAfDA"
     };
-    const input = { recoveryKey, updateKey, document };
-    const result = IonRequest.createCreateRequest(input);
+    
 
-    const didDoc = IonDid.createLongFormDid({
+    //LONG DID
+    const longDid = IonDid.createLongFormDid({
         document: document,
         recoveryKey: recoveryKey,
         updateKey: updateKey,
     });
+
+    //Publicacion de un DID
+    const input = { recoveryKey, updateKey, document };
+    const result = IonRequest.createCreateRequest(input);
 
     const options = {
         method: 'POST',
@@ -143,7 +182,7 @@ const createKey = async () => {
         body: JSON.stringify(result)
     };
 
-    let ionCoreEndpoint = "http://20.237.2.83/";
+    let ionCoreEndpoint = "http://localhost:3000/create";
 
     let response = await fetch(`${ionCoreEndpoint}`, options)
     if (response.status != 200 && response.status != 201) {
