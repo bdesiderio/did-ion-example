@@ -6,9 +6,13 @@ const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
 import { Wallet } from "ethers";
 import sha3 from "js-sha3";
-import { Base, BaseConverter, VerificationMethodJwk } from "./base-converter";
+import { BaseConverterVM, VerificationMethodJwk } from "./base-converter";
 import fetch from "node-fetch";
 import { updateIndexedAccessTypeNode } from "typescript";
+import { KMSClient, BaseConverter, Base } from "@extrimian/kms-client";
+import { MemoryStorage } from "./memory-storage";
+import { IJWK, IKMS, LANG, Suite } from "@extrimian/kms-core";
+import { ModenaDid, ModenaDocumentModel, ModenaPublicKeyModel, ModenaPublicKeyPurpose, ModenaRequest } from "@extrimian/modena-sdk";
 // import fetch from "node-fetch";
 
 function base64url(buffer: Uint8Array) {
@@ -62,7 +66,7 @@ var testDID = async () => {
         }]
     }
     const publicKeys = initialDidDocument.publicKeys.map(x => {
-        const vm = BaseConverter.convertVM(x.verificationMethod, Base.JWK) as VerificationMethodJwk;
+        const vm = BaseConverterVM.convertVM(x.verificationMethod, Base.JWK) as VerificationMethodJwk;
         let ionModel: IonPublicKeyModel = {
             id: vm.id,
             publicKeyJwk: vm.publicKeyJwk,
@@ -109,10 +113,23 @@ var testDID = async () => {
     return (await response.json() as any).didDocumentMetadata.canonicalId;
 }
 
+let upk: IJWK;
+let kms: IKMS;
+
 const createKey = async () => {
     //KMS
-    const recoveryKey = require('./keys/jwkEs256k1Public.json');
-    const updateKey = require('./keys/jwkEs256k2Public.json');
+    const localKms = new KMSClient({
+        lang: LANG.es,
+        storage: new MemoryStorage()
+    });
+
+    kms = localKms;
+
+    const updateKey = await localKms.create(Suite.ES256k)
+    const recoveryKey = await localKms.create(Suite.ES256k)
+
+    upk = updateKey.publicKeyJWK;
+
 
     const publicKeyDidComm = {
         id: "did-comm",
@@ -124,12 +141,12 @@ const createKey = async () => {
             y: "dOicXqbjFxoGJ-K0-GJ1kHYJqic_D_OMuUwkQ7Ol6nk"
         },
         purposes: [
-            IonPublicKeyPurpose.KeyAgreement
+            ModenaPublicKeyPurpose.KeyAgreement
         ]
     };
 
 
-    const publicKeyBbs: IonPublicKeyModel = {
+    const publicKeyBbs: ModenaPublicKeyModel = {
         id: "vc-bbs",
         type: "Bls12381G1Key2020",
         publicKeyJwk: {
@@ -139,117 +156,36 @@ const createKey = async () => {
             y: "dOicXqbjFxoGJ-K0-GJ1kHYJqic_D_OMuUwkQ7Ol6nk"
         },
         purposes: [
-            IonPublicKeyPurpose.AssertionMethod
+            ModenaPublicKeyPurpose.AssertionMethod
         ]
     };
 
-    // require('./keys/publicKeyModel1.json');
-
-
-    //DID Registry
-
-    // const pk = BaseConverter.convert(updateKey, Base.JWK, Base.Hex);
-    // var jwk = BaseConverter.convert("0xc1fc10089dce46a55d9c75e44fc3fe2e0fc6b71044857dedcbd3549f09c7ae6cba27bca8bfd5b809d10ddba9859bb12ceeaa4fd90fa77291184211953a56adf5", Base.Hex, Base.JWK);
-
-    const publicKeys: IonPublicKeyModel[] = [publicKeyDidComm, publicKeyBbs];
+    const publicKeys: ModenaPublicKeyModel[] = [publicKeyDidComm, publicKeyBbs];
 
     const services = require('./keys/service1.json');
     // const services = [service];
 
-    const document: IonDocumentModel = {
+    const document: ModenaDocumentModel = {
         publicKeys: publicKeys,
-        services,
+        services: [],
         // controller: "did:modena:ganache:EiAQl7gSqCJX50JZ4UjsnDnmTRxr0sWDxDjNxZTotvAfDA"
     };
 
 
     //LONG DID
-    const longDid = IonDid.createLongFormDid({
+    const longDid = ModenaDid.createLongFormDid({
         document: document,
-        recoveryKey: recoveryKey,
-        updateKey: updateKey,
+        recoveryKeys: [recoveryKey.publicKeyJWK],
+        updateKeys: [updateKey.publicKeyJWK],
     });
 
     //Publicacion de un DID
-    const input = { recoveryKey, updateKey, document };
-    const result = IonRequest.createCreateRequest(input);
-
-    const options = {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(result)
-    };
-
-    let ionCoreEndpoint = "http://localhost:3000/create";
-
-    let response = await fetch(`${ionCoreEndpoint}`, options)
-    if (response.status != 200 && response.status != 201) {
-        const msg = await response.json();
-        throw new Error(`Ion DID creation is not ok: ${msg}`);
-    }
-    const canonicalId = (await response.json() as any).didDocumentMetadata.canonicalId;
-
-    console.log(canonicalId);
-}
-
-const create2Key = async () => {
-    const recoveryKey = require('./keys/jwkEs256k2Public.json');
-    const updateKey = require('./keys/jwkEs256k1Public.json');
-    const publicKey = require('./keys/publicKeyModel1.json');
-
-    const publicKeys = [publicKey];
-
-    const services = require('./keys/service1.json');
-    // const services = [service];
-
-    const document: IonDocumentModel = {
-        publicKeys,
-        services
-    };
-    const input = { recoveryKey, updateKey, document };
-    const result = IonRequest.createCreateRequest(input);
-
-    const options = {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(result)
-    };
-
-    let ionCoreEndpoint = "http://localhost:3005";
-
-    let response = await fetch(`${ionCoreEndpoint}`, options)
-    if (response.status != 200 && response.status != 201) {
-        const msg = await response.json();
-        throw new Error(`Ion DID creation is not ok: ${msg}`);
-    }
-    const canonicalId = (await response.json() as any).didDocumentMetadata.canonicalId;
-
-    console.log(canonicalId);
-}
-
-const updateKey = async () => {
-    const publicKey = require('./keys/publicKeyModel1.json');
-    const publicKeys = [publicKey];
-
-    const services = require('./keys/service1.json');
     const input = {
-        didSuffix: 'EiBDvFE0jvl4TvGCAIM3IF-9plhcvND3iD1qxprRTlYh5A',
-        updatePublicKey: require('./keys/jwkEs256k1Public.json'),
-        nextUpdatePublicKey: require('./keys/jwkEs256k1Public.json'),
-        // require('./keys/jwkEs256k1Public.json'),
-        // nextUpdatePublicKey: require('./keys/jwkEs256k2Public.json'),
-        signer: LocalSigner.create(require('./keys/jwkEs256k2Private.json')),
-        servicesToAdd: services,
-        idsOfServicesToRemove: ['service5Id'],
-        publicKeysToAdd: publicKeys,
-        idsOfPublicKeysToRemove: ['publicKeyModel2Id']
+        document: document,
+        recoveryKeys: [recoveryKey.publicKeyJWK],
+        updateKeys: [updateKey.publicKeyJWK],
     };
-
-    const result = await IonRequest.createUpdateRequest(input);
+    const result = ModenaRequest.createCreateRequest(input);
 
     const options = {
         method: 'POST',
@@ -259,13 +195,68 @@ const updateKey = async () => {
         body: JSON.stringify(result)
     };
 
-    let ionCoreEndpoint = "http://localhost:3000";
+    let ionCoreEndpoint = "http://modena.gcba-extrimian.com:7000/create";
 
     let response = await fetch(`${ionCoreEndpoint}`, options)
     if (response.status != 200 && response.status != 201) {
         const msg = await response.json();
         throw new Error(`Ion DID creation is not ok: ${msg}`);
     }
+    const canonicalId = (await response.json() as any).didDocumentMetadata.canonicalId;
+
+    console.log(canonicalId);
+
+    await updateDIDDoc();
+}
+
+const updateDIDDoc = async () => {
+
+    const wait = async () => new Promise<void>((resolve, reject) => {
+        setTimeout(async () => {
+            const publicKey = require('./keys/publicKeyModel1.json');
+            const publicKeys = [publicKey];
+
+            const privatekey = await kms.export(upk);
+
+            const pbkJWK = BaseConverter.getPrivateJWKfromHex(privatekey.privateKey, privatekey.publicKey);
+
+            const services = require('./keys/service1.json');
+            const input = {
+                didSuffix: 'EiBDvFE0jvl4TvGCAIM3IF-9plhcvND3iD1qxprRTlYh5A',
+                updatePublicKey: upk,
+                nextUpdatePublicKeys: [(await kms.create(Suite.ES256k)).publicKeyJWK],
+                // require('./keys/jwkEs256k1Public.json'),
+                // nextUpdatePublicKey: require('./keys/jwkEs256k2Public.json'),
+                signer: LocalSigner.create(pbkJWK),
+                servicesToAdd: services,
+                idsOfServicesToRemove: ['service5Id'],
+                publicKeysToAdd: publicKeys,
+                idsOfPublicKeysToRemove: ['publicKeyModel2Id']
+            };
+
+            const result = await ModenaRequest.createUpdateRequest(input);
+
+            const options = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(result)
+            };
+
+            let ionCoreEndpoint = "http://modena.gcba-extrimian.com:7000/create";
+
+            let response = await fetch(`${ionCoreEndpoint}`, options)
+            if (response.status != 200 && response.status != 201) {
+                const msg = await response.json();
+                throw new Error(`Ion DID creation is not ok: ${msg}`);
+            }
+
+            console.log(response);
+        }, 30000);
+    });
+
+    await wait();
     // const body = await response.json();
     // return body.didDocumentMetadata.canonicalId;
 }

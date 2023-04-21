@@ -66,7 +66,7 @@ export enum Base {
     JWK = "jwk",
 }
 
-export class BaseConverter {
+export class BaseConverterVM {
     static convertVM(verificationMethod: VerificationMethod, toBase: Base) {
         //////////////// Hex <-> JWK
         if ((<VerificationMethodPublicKeyHex>verificationMethod).publicKeyHex && toBase == Base.JWK)
