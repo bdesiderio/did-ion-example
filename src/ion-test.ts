@@ -115,6 +115,7 @@ var testDID = async () => {
 
 let upk: IJWK;
 let kms: IKMS;
+let didSuffix: string;
 
 const createKey = async () => {
     //KMS
@@ -206,6 +207,8 @@ const createKey = async () => {
 
     console.log(canonicalId);
 
+    didSuffix = canonicalId.substring('did:quarkid:matic:'.length);
+
     await updateDIDDoc();
 }
 
@@ -222,7 +225,7 @@ const updateDIDDoc = async () => {
 
             const services = require('./keys/service1.json');
             const input = {
-                didSuffix: 'EiBDvFE0jvl4TvGCAIM3IF-9plhcvND3iD1qxprRTlYh5A',
+                didSuffix: didSuffix,
                 updatePublicKey: upk,
                 nextUpdatePublicKeys: [(await kms.create(Suite.ES256k)).publicKeyJWK],
                 // require('./keys/jwkEs256k1Public.json'),
